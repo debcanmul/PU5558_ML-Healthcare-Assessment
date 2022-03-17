@@ -7,52 +7,57 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-## Introduction
-
-This assessment will use the Knee Replacement CCG 2021 data set. 
-
-The first section will answer which machine learning algorithm to choose for the 3 given questions. 
-
-The second section will......for question no. 
-
-## Section 1
-
-* Estimate the post-operative EQ5D index for a patient?
-
-* Predict how much pain a patient will have after the operation?
-
-* Calculate how many patients have had previous surgery?
-
-I believe that this question doesn't require a machine learning algorithm to answer the question. 
-
-## Section 2
 
 ## Load necessary packages
 
 ```{r}
-
+library(tidyverse)    # for general data science
+library(tidymodels)   # for machine learning
+library(vip)          # for variable importance plots
 ```
 
 ## Load chosen dataset
 
 ```{r}
+knee_data <- read_csv("Knee Replacement CCG 2021 (2).csv")
+
+glimpse(knee_data)
+
+summary(knee_data)
+
+```
+```{r trying to work out all the values for 9 .....} 
+#take out the variables from the data set mentioned in the AIS
+knee_data%>%
+  filter_all("9")
 
 ```
 
+```{r}
+rlang::last_error()
+```
+```{r}
+summarise_all(knee_data)
+```
+
+
+
 ## Dataset description
 
+This assessment will use the Knee Replacement CCG 2021 data set.
 
 ## Suitable machine learning algorithm for three questions:
 
 1. Before the operation, can we estimate the post-operative EQ5D index for a patient?
-
+Supervised Learning - we have the variable, Regression. Output is numerical continuous for the index...rounding to 3 decimal places. If there is a linear relationship then you can use linear regression. We know it's supervised and we know the outcome is a numerical continuous so it must be regression. See flowchart which ML.
 
 2. Before the operation, can we predict how much pain a patient will have after the operation?
+Supervised Learning - do we have the variable??? Classification - Post-Op Q Pain
 
 
 3. Before the operation, can we calculate how many patients have had previous surgery? 
 
-
+I believe that this question doesn't require a machine learning algorithm to answer the question. The variable "Pre-Op Q Previous Surgery" could be used to calculate this answer by.....
 
 
 ## Model building to answer chosen question
@@ -83,3 +88,5 @@ I believe that this question doesn't require a machine learning algorithm to ans
 
 ## Limitations of machine learning model
 
+Size of sample
+PCA ??
