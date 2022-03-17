@@ -1,0 +1,85 @@
+---
+title: "PU5558-assessment1"
+author: "Anonymous"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Introduction
+
+This assessment will use the Knee Replacement CCG 2021 data set. 
+
+The first section will answer which machine learning algorithm to choose for the 3 given questions. 
+
+The second section will......for question no. 
+
+## Section 1
+
+* Estimate the post-operative EQ5D index for a patient?
+
+* Predict how much pain a patient will have after the operation?
+
+* Calculate how many patients have had previous surgery?
+
+I believe that this question doesn't require a machine learning algorithm to answer the question. 
+
+## Section 2
+
+## Load necessary packages
+
+```{r}
+
+```
+
+## Load chosen dataset
+
+```{r}
+
+```
+
+## Dataset description
+
+
+## Suitable machine learning algorithm for three questions:
+
+1. Before the operation, can we estimate the post-operative EQ5D index for a patient?
+
+
+2. Before the operation, can we predict how much pain a patient will have after the operation?
+
+
+3. Before the operation, can we calculate how many patients have had previous surgery? 
+
+
+
+
+## Model building to answer chosen question
+
+1.	Data splitting
+
+```{r}
+
+```
+
+2.	Selection and preprocessing of predictors
+
+```{r}
+
+```
+
+3.	Model specification and training
+
+```{r}
+
+```
+
+4.	Model evaluation
+
+```{r}
+
+```
+
+## Limitations of machine learning model
+
