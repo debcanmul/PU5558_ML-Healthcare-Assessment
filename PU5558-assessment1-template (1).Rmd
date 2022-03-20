@@ -13,7 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)    # for general data science
 library(tidymodels)   # for machine learning
+library(corrplot)     # for visualising correlation matrices
 library(vip)          # for variable importance plots
+library(randomForest) # for the random forest model engine we will be using
 ```
 
 ## Load chosen dataset
@@ -23,22 +25,55 @@ knee_data <- read_csv("Knee Replacement CCG 2021 (2).csv")
 
 glimpse(knee_data)
 
-summary(knee_data)
 
 ```
-```{r trying to work out all the values for 9 .....} 
-#take out the variables from the data set mentioned in the AIS
-knee_data%>%
-  filter_all("9")
 
-```
+I initially decided to try linear regression as a model. I chose variables that would be available before the operation. Only using the Post-Op EQ5D Index to train the model. There may be confounding variable, factors that affect the Post-Op EQ5D Index other than those chosen, but due to lack of understanding of the research area I have simply chosen variables that are likely to have a relationship. There are 81 variables in the original data set, I selected 18 from the 81 variables.
+
+Chosen potential predictor variables:
+
+* Pre-Op EQ5D Index
+* Age Band
+* Gender
+* Pre-Op Q EQ VAS
+* Knee Replacement Pre-Op Q Pain `consecutive variables to` Knee Replacement Pre-Op Q Score
+
+Outcome Variable
+* Post-Op Q EQ5D Index
+
+The data set containing the 18 variables was then tidied to remove any rows with missing values. Only unique rows were kept. Finally, only rows in the Age Band and Gender without * were kept.  
 
 ```{r}
-rlang::last_error()
+knee_data_col<-knee_data%>%
+  select(`Pre-Op Q EQ5D Index`,`Age Band`,`Gender`,`Pre-Op Q EQ VAS`,`Knee Replacement Pre-Op Q Pain`:`Knee Replacement Pre-Op Q Score`,`Post-Op Q EQ5D Index`) %>%
+  drop_na() %>%    # remove rows with missing values
+  unique()%>% # keep unique row
+  filter(`Age Band`!="*")%>%
+filter (`Gender`!="*")
 ```
+
+```{Preview the changes to the data}
+
+glimpse(knee_data_col)
+
+```
+
+
 ```{r}
-summarise_all(knee_data)
+knee_data_col %>%
+ggplot(aes(x = `Post-Op Q EQ5D Index`)) + 
+  geom_histogram(bins = 30, col= "white")
 ```
+The variable we are trying to predict is not a normal distribution so we would have to transform the data. I used the log10() scale added to the histogram, but it didn't seem to transform the graph to a normal distribution. There are other types of transforming that could be used. 
+
+
+```{r}
+knee_data_col %>%
+ggplot(aes(x = `Post-Op Q EQ5D Index`)) + 
+  geom_histogram(bins = 30, col= "white")+ scale_x_log10()
+```
+
+
 
 
 
@@ -49,15 +84,16 @@ This assessment will use the Knee Replacement CCG 2021 data set.
 ## Suitable machine learning algorithm for three questions:
 
 1. Before the operation, can we estimate the post-operative EQ5D index for a patient?
-Supervised Learning - we have the variable, Regression. Output is numerical continuous for the index...rounding to 3 decimal places. If there is a linear relationship then you can use linear regression. We know it's supervised and we know the outcome is a numerical continuous so it must be regression. See flowchart which ML.
+Supervised Learning - we have the variable, Regression. Output is numerical continuous for the index...rounding to 3 decimal places. If there is a linear relationship then you can use linear regression. We know it's supervised and we know the outcome is a numerical continuous so it must be regression. See flowchart which ML. Linear regression, Random Forest
 
 2. Before the operation, can we predict how much pain a patient will have after the operation?
-Supervised Learning - do we have the variable??? Classification - Post-Op Q Pain
+Supervised Learning - do we have the variable??? Yes?? Classification - Post-Op Q Pain. Outcome is a classification discrete??
+If it is classification it could be either logistic regression or Support Vector Machine (SVM). Logistic regression works with binary data so it can't be this algorithm because there are 5 classes?? explain briefly.
 
 
 3. Before the operation, can we calculate how many patients have had previous surgery? 
 
-I believe that this question doesn't require a machine learning algorithm to answer the question. The variable "Pre-Op Q Previous Surgery" could be used to calculate this answer by.....
+I believe that this question doesn't require a machine learning algorithm to answer the question. The variable "Pre-Op Q Previous Surgery" could be used to calculate this answer by.....1 is a yes?? filter and then count.
 
 
 ## Model building to answer chosen question
@@ -66,12 +102,53 @@ I believe that this question doesn't require a machine learning algorithm to ans
 
 ```{r}
 
+knee_data_split <- knee_data_col %>%
+    initial_split(prop = 0.8,
+                  strata = `Post-Op Q EQ5D Index`)
+
+knee_train <- training(knee_data_split)
+knee_test <- testing(knee_data_split)
+
 ```
 
 2.	Selection and preprocessing of predictors
 
+The potential predictors can be checked for correlation using the corrplot function as shown below. The reduced number of variables make the corrplot easier to read. If all 81 variables had been included in the corrplot it wouldn't have been legible. It would have been good practice to try different selection of variables and check for correlation.
+
+Notice Age Band and Gender are not in the corrplot. This is because these variables are still characters and not numeric. The variables will be changed to numeric in the workflow.
+
+```{r}
+knee_data_cor <- cor(knee_train %>% select_if(is.numeric))
+corrplot(knee_data_cor, tl.cex = 0.5)
+```
+It can be seen in the corrplot that there aren't any strong linear relationships between Post-Op Q EQ5D and the other variables. I checked three of the variables on a scatterplot. 
+
+
+```{r}
+knee_train %>%
+  ggplot(aes(x =`Pre-Op Q EQ5D Index`, y = `Post-Op Q EQ5D Index`)) + 
+  geom_point()
+```
+
+```{r}
+knee_train %>%
+  ggplot(aes(x = `Knee Replacement Pre-Op Q Work`, y = `Post-Op Q EQ5D Index`)) + 
+  geom_point()
+```
+
+```{r}
+knee_train %>%
+  ggplot(aes(x = `Knee Replacement Pre-Op Q Score`, y = `Post-Op Q EQ5D Index`)) + 
+  geom_point()
+```
+There was no linearity shown in the 3 graphs. I then decided to compare the linear regression with random forest.
+
 ```{r}
 
+simple_rec <- knee_train %>%
+  recipe( %>%
+  step_zv(all_predictors()) %>%
+  step_corr(all_predictors())
 ```
 
 3.	Model specification and training
@@ -89,4 +166,5 @@ I believe that this question doesn't require a machine learning algorithm to ans
 ## Limitations of machine learning model
 
 Size of sample
+Understanding of casual limits
 PCA ??
