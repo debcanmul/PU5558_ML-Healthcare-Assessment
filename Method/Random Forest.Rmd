@@ -1,0 +1,113 @@
+---
+title: "Random Forest"
+author: "Debbie Cannon"
+date: "21/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-packages}
+
+library(tidyverse)    # for general data science
+library(tidymodels)   # for machine learning
+library(vip)          # for variable importance plots
+library(randomForest) # for the random forest model engine we will be using
+
+```
+```{r prepare-data}
+knee_data <- read_csv("Knee Replacement CCG 2021 (2).csv")
+
+knee_data_filtered <- knee_data %>%
+  select(`Pre-Op Q EQ5D Index`,`Age Band`,`Gender`,`Pre-Op Q EQ VAS`,`Knee Replacement Pre-Op Q Pain`:`Knee Replacement Pre-Op Q Score`,`Post-Op Q EQ5D Index`) %>%
+  drop_na() %>%    # remove rows with missing values
+  unique()# keep unique rows
+ 
+
+
+
+```
+
+
+
+```{r data-splitting}
+
+knee_split <- knee_data_filtered %>%
+    initial_split(prop = 0.8,
+                  strata = `Post-Op Q EQ5D Index`)
+
+knee_train <- training(knee_split)
+knee_test <- testing(knee_split)
+
+```
+
+
+```{r}
+
+simple_rec <- knee_train %>%
+  recipe(`Post-Op Q EQ5D Index` ~ `Pre-Op Q EQ5D Index`,`Pre-Op Q EQ VAS`,`Knee Replacement Pre-Op Q Pain`:`Knee Replacement Pre-Op Q Score`) %>%
+  step_zv(all_predictors()) %>%
+  step_corr(all_predictors())
+
+
+```
+
+step_dummy(all_nominal_predictors()) I've taken this out. I'm still getting error that the columns should be numeric. I have therefore removed Age Band and Gender from the recipe. I think the character variables would need to be changed to factor variables.
+
+```{r}
+# Random forest model specification: rf_spec
+rf_spec <- rand_forest() %>%
+    set_mode("regression") %>%
+    set_engine("randomForest")
+```
+
+
+```{r}
+# Random forest workflow: DZ_wflow_rf
+knee_wflow_rf <-workflow() %>%
+           add_recipe(simple_rec) %>%
+           add_model(rf_spec)
+```
+
+```{r cross validation}
+
+
+knee_folds <- vfold_cv(knee_train, v = 10) # 10-fold cross validation
+
+# We want to save the predictions
+keep_pred <- control_resamples(save_pred = TRUE)
+
+# Fit the two model:
+
+
+# Random forest (make sure you named the workflow DZ_wflow_rf)
+knee_wflow_rf_fit <- knee_wflow_rf %>%
+    fit_resamples(resamples = knee_folds, 
+                  control = keep_pred)
+    
+```
+
+
+
+```{r}
+
+bind_rows(collect_metrics(knee_wflow_rf_fit) %>%
+                          mutate(model = "random_forest"))
+
+```
+
+```{r}
+
+knee_wflow_rf_fit %>% 
+  extract_fit_parsnip() %>% 
+  vip(num_features = 5)
+
+```
+
+
+
+```{r}
+```
+
